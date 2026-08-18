@@ -1,0 +1,390 @@
+================================================================================
+AURA CAPSTONE PROJECT — DEVELOPMENT SESSION LOG (Prompts & Replies)
+================================================================================
+This file records the user prompts and Claude's replies throughout the
+development of AURA (AI Underwriting Risk Assistant), in chronological order.
+Tool-call mechanics (file reads/writes, shell commands, browser checks) are
+summarized rather than reproduced verbatim; user messages and the substance
+of Claude's responses are preserved. This is provided as the "AI prompts,
+instructions, or configuration files used during development" deliverable
+referenced in the capstone submission guidelines.
+
+
+--------------------------------------------------------------------------------
+TURN 1
+--------------------------------------------------------------------------------
+USER:
+"I Want to build a capstone project. For which I have a given a business use
+case - Commercial P&C underwriting faces submission overload, talent
+shortages, loss ratio pressure, and broker expectations for faster decisions.
+Manual document review and eligibility checks slow down underwriting and
+create leakage. AURA unlocks higher underwriting throughput, better risk
+selection, faster broker response times, and improved loss ratio discipline,
+helping carriers compete in an agile, E&S-driven and capacity-constrained
+market. Attached is the file for reference what needs to be done with given
+use case. Go through the requirement, explain the use case in simple
+language. Plan a solution as per given pdf guideline and deliverables"
+(Attached: Capstone Project Guidelines_Claude 1.pdf)
+
+CLAUDE:
+Read the guideline PDF (deadline: submission due 18-Aug-2026, i.e. the next
+day). Explained the business problem in plain language: brokers send
+"submissions" to insurers; underwriters must manually read documents, check
+eligibility against carrier "appetite" rules, judge risk, and reply — this is
+slow, understaffed, and error-prone ("leakage"). AURA automates extraction,
+eligibility checking, risk triage, and broker-response drafting using Claude.
+
+Checked the environment: D:\CapStoneProject was empty; no Node.js installed;
+Python presence unconfirmed from the shell at that point. Asked clarifying
+questions via AskUserQuestion about: (1) how AI should be integrated
+(browser-only simulated vs. live API vs. chat-based), (2) sample data
+availability, (3) whether to also build the 5-slide deck.
+
+
+--------------------------------------------------------------------------------
+TURN 2
+--------------------------------------------------------------------------------
+USER (mid-turn message):
+"Python is already installed in system."
+
+CLAUDE:
+Re-verified Python availability in the shell (still inconclusive at that
+exact moment). Re-asked a narrower AskUserQuestion given Python's
+availability: live Claude API via Python vs. simulated responses, and
+whether an Anthropic API key / sample documents were available.
+
+USER answered via AskUserQuestion:
+- AI integration: "Live Claude API via Python"
+- Inputs available: "I have an Anthropic API key"
+
+CLAUDE:
+Asked one more AskUserQuestion round: sample data (synthetic vs. provided)
+and whether to build the .pptx deck.
+
+USER answered:
+- Sample data: "Create synthetic examples (Recommended)"
+- Slide deck: "Yes, build the .pptx deck too (Recommended)"
+
+CLAUDE:
+Wrote the final plan to the plan file: a Python + Streamlit app with live
+Anthropic API calls, a deterministic appetite/eligibility engine, 4 synthetic
+sample submissions, and a 5-slide presentation. Called ExitPlanMode; user
+approved.
+
+
+--------------------------------------------------------------------------------
+TURN 3 — Implementation begins
+--------------------------------------------------------------------------------
+(No new user message — continuation of the approved plan.)
+
+CLAUDE:
+Verified Python actually works via PowerShell (Python 3.15.0rc1 — a release
+candidate). Scaffolded the project: appetite_rules.json, sample_submissions.py,
+aura_engine.py (Claude extraction/risk/drafting + deterministic appetite
+check), app.py (Streamlit UI), requirements.txt, .env.example, README.md,
+PROMPTS.md.
+
+Attempted `pip install -r requirements.txt` (streamlit, anthropic,
+python-dotenv). This failed: Streamlit pulls in pandas, which has no
+prebuilt wheel for Python 3.15.0rc1 and fails to build from source (no
+Visual Studio build tools). A follow-up attempt to install just the
+`anthropic` SDK also hung — one of its dependencies (jiter, Rust-based) tried
+to bootstrap an entire Rust toolchain to build from source.
+
+DECISION: Pivoted the entire architecture to a zero-dependency, pure Python
+standard-library implementation — no `pip install` required at all. Removed
+app.py (Streamlit) and rewrote:
+  - server.py — a stdlib http.server app serving the UI and a JSON API
+  - aura_engine.py — Claude calls via direct REST (urllib) instead of the
+    anthropic SDK; deterministic appetite rule checks
+  - static/index.html, static/style.css, static/app.js — vanilla JS frontend
+Verified the server starts cleanly and the UI loads correctly in-browser.
+
+
+--------------------------------------------------------------------------------
+TURN 4
+--------------------------------------------------------------------------------
+CLAUDE (proactive, before user's next message):
+Asked whether the user wanted to set the API key themselves now or test
+without live calls first.
+
+USER:
+"I have signed in with authorize creds. please verify again"
+
+CLAUDE:
+Checked the shell — ANTHROPIC_API_KEY was not actually set. Explained that
+env vars set in one PowerShell session don't persist across separate tool
+calls, and that the reliable path is a local .env file (which server.py
+reads automatically), never pasted into chat.
+
+
+--------------------------------------------------------------------------------
+TURN 5
+--------------------------------------------------------------------------------
+USER:
+"How to create D:\CapStoneProject\.env with your ANTHROPIC_API_KEY so I can
+verify the live Claude calls (extraction -> risk triage -> drafting) actually
+work end to end"
+
+CLAUDE:
+Gave two options to do this in the user's own terminal/Notepad (PowerShell
+Set-Content one-liner, or manual Notepad steps) — explicitly not through the
+chat, so the key is never exposed in the conversation.
+
+
+--------------------------------------------------------------------------------
+TURN 6
+--------------------------------------------------------------------------------
+USER:
+"how to get API key?"
+
+CLAUDE:
+Explained the steps: console.anthropic.com, sign up/log in, Settings > API
+Keys, Create Key, add billing credit if needed.
+
+
+--------------------------------------------------------------------------------
+TURN 7
+--------------------------------------------------------------------------------
+USER:
+"Is there any other way to get API key thorugh claude desktop app"
+
+CLAUDE:
+Explained the Claude desktop app / claude.ai and the Developer API are
+separate products with separate billing; there's no way to generate an API
+key from the desktop app. Only console.anthropic.com issues API keys.
+
+
+--------------------------------------------------------------------------------
+TURN 8
+--------------------------------------------------------------------------------
+USER:
+"I dont have ANTHROPIC_API_KEY. is there any other alternative"
+
+CLAUDE:
+Proposed and built a "demo mode": since Claude (this session) can itself
+produce genuine Claude reasoning, generated real extraction/risk/draft
+outputs for all 4 synthetic sample submissions by hand, saved them in
+demo_responses.py, and wired server.py to serve these automatically whenever
+ANTHROPIC_API_KEY is unset — with a UI banner distinguishing "demo mode" from
+"live mode". Live mode activates automatically the moment a real key is set,
+with no code changes needed.
+
+While building this, found and fixed a real bug in appetite_rules.json: the
+excluded_industries list used full descriptive phrases ("fireworks
+manufacturing or distribution") that would not literally appear as
+substrings in real submission text ("distribution of consumer fireworks..."),
+so the exclusion rule silently never fired. Fixed by using short keywords
+("fireworks") instead.
+
+Restarted the server and ran all 4 sample submissions end-to-end via the
+browser tool, confirming each produced the expected outcome (Eligible/Low,
+Refer/Medium, Ineligible/High, Refer-with-data-gaps), plus verified the
+custom-text guard (rejects unedited/custom text in demo mode with a clear
+error).
+
+
+--------------------------------------------------------------------------------
+TURN 9
+--------------------------------------------------------------------------------
+USER:
+"lets run this"
+
+CLAUDE:
+Confirmed the server was already running at localhost:8000, opened it in the
+browser tool, confirmed the UI loaded correctly, and gave the user the URL
+and usage steps to try themselves.
+
+
+--------------------------------------------------------------------------------
+TURN 10
+--------------------------------------------------------------------------------
+USER:
+"I want you to modify the project. Add eligibility rules on which you are
+verifying verdict. Add rules on which rationale is checked"
+
+CLAUDE:
+Rebuilt appetite_rules.json as a list of named, typed rules (id, type,
+severity) instead of scattered if-statements, and rewrote check_appetite()
+in aura_engine.py as a small generic rules engine dispatching on rule type.
+Added two new rules (MIN_ANNUAL_REVENUE, NON_RENEWED_FOR_CAUSE) — and while
+adding the latter, caught another subtle bug: a naive "for cause" substring
+check would have also matched the phrase "not for cause" in sample 1; fixed
+with an exclude_keywords mechanism.
+
+Built a second, independent module, rationale_rules.py, that runs after
+Claude's risk assessment and checks the rationale itself (not the verdict):
+minimum length, tier-consistency with the appetite status (e.g. an Ineligible
+account can never be tagged "Low risk"), whether flagged data gaps cover
+extraction's missing fields, whether every dollar figure Claude cites traces
+back to the actual extracted data (a hallucination check), and whether the
+rationale actually addresses every triggered eligibility rule.
+
+Wired both into server.py and the UI (rule IDs shown inline; new "Rationale
+Verification" checklist panel). Verified all 4 samples still produce correct
+outcomes, and ran a synthetic bad-output test through rationale_rules.py to
+confirm it correctly catches injected defects (it caught all 5).
+
+
+--------------------------------------------------------------------------------
+TURN 11
+--------------------------------------------------------------------------------
+USER:
+"Yes, update the Solution Overview slide to reflect it"
+
+CLAUDE:
+Updated slide 4 of the presentation (built earlier via a hand-written OOXML
+generator, since neither Node.js/pptxgenjs nor python-pptx could be installed
+in this environment): expanded the architecture flow diagram to 7 stages
+(adding "Eligibility Rules" and "Rationale QA" as distinct steps), expanded
+the "Key Capabilities" list from 4 to 5 items, and added a note clarifying
+that eligibility and rationale checks are deterministic Python, not Claude.
+Regenerated and re-validated the .pptx (well-formed XML, correct text
+content across all 5 slides).
+
+
+--------------------------------------------------------------------------------
+TURN 12
+--------------------------------------------------------------------------------
+USER:
+"i want u to add all fields which we are targeting to extract in a
+collapsible section. list down All rules with description against which you
+are verifying for appetite check eligibility in collapsible section. List
+down all criteria by which risk triaging is done"
+
+CLAUDE:
+Refactored aura_engine.py so the extraction fields and risk-triage criteria
+are named, single-source-of-truth lists (EXTRACTED_FIELDS, RISK_CRITERIA),
+and rewrote EXTRACTION_PROMPT / RISK_PROMPT to generate their content
+directly from these lists — so what's shown in the UI can never drift from
+what's actually sent to Claude. Added a new GET /api/reference endpoint
+serving all three lists (extraction fields, appetite rules, risk criteria).
+Added three native <details>/<summary> collapsible sections to the UI under
+a new "How AURA Decides — Reference" panel. Verified the endpoint's JSON,
+confirmed all three sections populate and expand correctly, and re-ran the
+full pipeline to confirm the prompt refactor didn't break anything.
+
+
+--------------------------------------------------------------------------------
+TURN 13
+--------------------------------------------------------------------------------
+USER:
+"Currently this project is running on my localhost. I want to share it with
+my colleague so it can be open to anyone's system"
+
+CLAUDE:
+Asked a clarifying AskUserQuestion on sharing scope (same LAN vs. temporary
+public tunnel vs. persistent cloud deploy), since this materially changes
+security/cost exposure once a live API key is involved.
+
+USER answered: "Quick public link for a demo call"
+
+CLAUDE:
+Used the Windows-builtin OpenSSH client to open an SSH reverse tunnel via
+localhost.run (no downloads, no account). First attempt returned empty
+responses; diagnosed that `-R 80:localhost:8000` was likely resolving
+"localhost" to the IPv6 loopback (::1) while the Python server only binds
+IPv4 (0.0.0.0). Fixed by pointing the tunnel explicitly at 127.0.0.1;
+verified GET and POST requests both worked correctly through the resulting
+public URL. Delivered the URL along with explicit caveats: no
+authentication on the tunnel, safe for now because the app is in demo mode,
+and a warning not to leave it running with a live API key unattended.
+
+
+--------------------------------------------------------------------------------
+TURN 14
+--------------------------------------------------------------------------------
+USER:
+"want a stable custom domain"
+
+CLAUDE:
+Explained the two tiers localhost.run offers: a stable-but-random subdomain
+via a dedicated SSH key (no account needed, doable immediately) vs. a fully
+custom chosen name (requires the user to create a free account themselves,
+since account creation isn't something Claude can do on a user's behalf).
+Asked which the user wanted via AskUserQuestion.
+
+USER: dismissed the question (no answer given at that point).
+
+CLAUDE:
+Acknowledged and paused, waiting for further instruction rather than
+guessing.
+
+
+--------------------------------------------------------------------------------
+TURN 15
+--------------------------------------------------------------------------------
+USER:
+"when i am trying to open html file from static folder from my system it is
+not working as you have running in localhost"
+
+CLAUDE:
+Explained that static/index.html is not a standalone page — it calls
+/api/samples, /api/reference, /api/analyze, which only exist because
+server.py is running. Opening the file directly via file:// bypasses the
+server entirely, so every fetch() call fails silently. Gave the correct
+steps: run `python server.py`, then open http://localhost:8000 (not the
+HTML file directly).
+
+USER (mid-turn, same turn):
+"i want to share the whole capstone project with my team. how they can run
+it in there system"
+
+CLAUDE:
+Packaged a clean distributable zip (only the 15 essential project files —
+no logs, cache, pid files, or secrets), sent it to the user, and gave clear
+run instructions for teammates (unzip, install Python 3.9+ if needed, run
+`python server.py`, open localhost:8000 — zero pip installs required).
+Noted the project wasn't yet under version control and asked whether the
+user still needed the public tunnel link (found it had gone down, 503) or
+wanted it torn down given the new sharing approach.
+
+
+--------------------------------------------------------------------------------
+TURN 16
+--------------------------------------------------------------------------------
+USER:
+"no need of public link. create a git repo now"
+
+CLAUDE:
+Shut down the SSH tunnel process, cleaned up scratch/log/pid files, extended
+.gitignore to generically cover *_pid.txt, ran `git init`, staged the 15
+intended project files (confirmed no .env or logs were included), and
+created the initial commit ("Initial commit: AURA underwriting risk
+assistant"). Verified with `git log` and `git status` (clean working tree).
+
+
+--------------------------------------------------------------------------------
+TURN 17
+--------------------------------------------------------------------------------
+USER:
+"Here is the url for empty repo - https://github.com/SurbhiKh98/CapStoneProject
+. now create this project in given repo"
+
+CLAUDE:
+Added the URL as the `origin` remote. Attempted `git push -u origin master`,
+which hung and timed out — pushing over HTTPS to GitHub requires interactive
+sign-in via Git Credential Manager (a browser/Windows popup), which a
+non-interactive shell can't complete, and which Claude should not attempt to
+handle directly since it would involve GitHub credentials/tokens. Asked the
+user to run `git push -u origin master` themselves in their own terminal, so
+they can complete the sign-in prompt, after which the credential would be
+cached for any future pushes.
+
+
+--------------------------------------------------------------------------------
+TURN 18 (current)
+--------------------------------------------------------------------------------
+USER:
+"create a text file for the prompts and reply throughtout this project
+session"
+
+CLAUDE:
+Created this file, SESSION_LOG.txt, summarizing every user prompt and the
+substance of Claude's corresponding replies across the session, for use as
+the capstone's "AI prompts, instructions, or configuration files used during
+development" submission artifact.
+
+================================================================================
+END OF LOG
+================================================================================
