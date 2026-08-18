@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AURA — Underwriting Risk Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>AURA</h1>
+    <p class="subtitle">AI Underwriting Risk Assistant — Commercial P&amp;C submission triage</p>
+  </header>
+
+  <main>
+    <section class="panel input-panel">
+      <h2>Submission Input</h2>
+      <label for="sample-select">Load a sample submission</label>
+      <select id="sample-select"></select>
+
+      <label for="submission-text">Broker submission text</label>
+      <textarea id="submission-text" rows="18"></textarea>
+
+      <button id="analyze-btn">Analyze Submission</button>
+      <p id="status-msg" class="status-msg"></p>
+
+      <div class="impact-card">
+        <h3>Illustrative Impact (PoC estimate)</h3>
+        <div class="impact-row">
+          <div><strong>Manual review</strong><br />25–40 min</div>
+          <div><strong>With AURA</strong><br />~2–3 min</div>
+        </div>
+        <p class="fineprint">Directional estimates for this PoC, not measured production data.</p>
+      </div>
+    </section>
+
+    <section class="panel results-panel" id="results-panel">
+      <p class="placeholder">Pick a sample submission (or paste your own) on the left, then click <strong>Analyze Submission</strong>.</p>
+    </section>
+  </main>
+
+  <section class="reference-panel">
+    <h2>How AURA Decides — Reference</h2>
+    <p class="reference-intro">These three lists are read directly from the code that runs the pipeline (<code>aura_engine.py</code> / <code>appetite_rules.json</code>) — not maintained separately, so they can't drift from what actually happens on each analysis.</p>
+    <div class="reference-grid">
+      <details class="reference-block">
+        <summary>Fields AURA Extracts <span id="fields-count" class="count-badge"></span></summary>
+        <div id="fields-content" class="reference-content"></div>
+      </details>
+      <details class="reference-block">
+        <summary>Eligibility Rules Checked <span id="rules-count" class="count-badge"></span></summary>
+        <div id="rules-content" class="reference-content"></div>
+      </details>
+      <details class="reference-block">
+        <summary>Risk Triage Criteria <span id="criteria-count" class="count-badge"></span></summary>
+        <div id="criteria-content" class="reference-content"></div>
+      </details>
+    </div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

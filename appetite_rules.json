@@ -1,0 +1,73 @@
+{
+  "carrier_name": "Meridian Specialty Insurance (fictional, for PoC demo)",
+  "program": "Commercial P&C - Small to Mid-Market E&S",
+  "notes": "Hard rules only. All values are illustrative for this proof-of-concept and do not represent a real carrier's actual appetite.",
+  "rules": [
+    {
+      "id": "EXCLUDED_INDUSTRY",
+      "description": "Industry class is on the carrier's prohibited list",
+      "type": "industry_exclusion",
+      "severity": "Ineligible",
+      "keywords": ["adult entertainment", "cannabis", "explosives", "asbestos", "fireworks"]
+    },
+    {
+      "id": "OVER_AUTHORITY_TIV",
+      "description": "Total insured value exceeds the underwriter's binding authority",
+      "type": "max_value",
+      "severity": "Refer",
+      "field": "tiv",
+      "max": 10000000
+    },
+    {
+      "id": "STATE_TIV_RESTRICTION",
+      "description": "Property TIV exceeds the state-specific catastrophe exposure threshold",
+      "type": "state_max_value",
+      "severity": "Refer",
+      "field": "tiv",
+      "states": {
+        "FL": { "max": 5000000, "note": "Coastal wind exposure" },
+        "CA": { "max": 7500000, "note": "Wildfire/earthquake exposure" }
+      }
+    },
+    {
+      "id": "MIN_YEARS_IN_BUSINESS",
+      "description": "Business does not meet the minimum operating history",
+      "type": "min_value",
+      "severity": "Refer",
+      "field": "years_in_business",
+      "min": 2
+    },
+    {
+      "id": "MAX_LOSSES",
+      "description": "Loss frequency in the last 3 years exceeds the acceptable threshold",
+      "type": "max_value",
+      "severity": "Refer",
+      "field": "losses_last_3_years",
+      "max": 2
+    },
+    {
+      "id": "MIN_ANNUAL_REVENUE",
+      "description": "Annual revenue is below the program's minimum account size",
+      "type": "min_value",
+      "severity": "Refer",
+      "field": "annual_revenue",
+      "min": 100000
+    },
+    {
+      "id": "NON_RENEWED_FOR_CAUSE",
+      "description": "Prior carrier non-renewed the account for cause (adverse loss history)",
+      "type": "text_contains",
+      "severity": "Refer",
+      "field": "prior_carrier_status",
+      "keywords": ["for cause"],
+      "exclude_keywords": ["not for cause"]
+    },
+    {
+      "id": "MISSING_FIELDS",
+      "description": "Submission is missing too many key underwriting fields to fully evaluate",
+      "type": "missing_fields_threshold",
+      "severity": "Refer",
+      "min_missing": 3
+    }
+  ]
+}
